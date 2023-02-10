@@ -42,19 +42,19 @@ const Statistics = (props) => {
 
 const App = () => {
   // tallenna napit omaan tilaansa
-  let [good, setGood] = useState(0);
-  let [neutral, setNeutral] = useState(0);
-  let [bad, setBad] = useState(0);
+  const [good, setGood] = useState(0);
+  const [neutral, setNeutral] = useState(0);
+  const [bad, setBad] = useState(0);
 
   return (
     <div>
       <h1>Give feedback</h1>
-      <Button prompt="good" handleClick={() => setGood((good += 1))}></Button>
+      <Button prompt="good" handleClick={() => setGood(good + 1)}></Button>
       <Button
         prompt="neutral"
-        handleClick={() => setNeutral((neutral += 1))}
+        handleClick={() => setNeutral(neutral + 1)}
       ></Button>
-      <Button prompt="bad" handleClick={() => setBad((bad += 1))}></Button>
+      <Button prompt="bad" handleClick={() => setBad(bad + 1)}></Button>
       <h1>Statistics</h1>
       <Statistics good={good} neutral={neutral} bad={bad}></Statistics>
     </div>
