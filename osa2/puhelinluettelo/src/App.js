@@ -1,19 +1,27 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import personService from "./services/persons";
 
 const Person = (props) => {
   return (
     <p>
-      {props.name} {props.number}
+      {props.name} {props.number}{" "}
+      <button onClick={props.deleteContact}>delete</button>
     </p>
   );
 };
 
 const Persons = (props) => {
   const personsToShow = props.persons;
+  const deleteOnClick = props.deleteOnClick;
   return (
     <div>
       {personsToShow.map((person) => (
-        <Person key={person.name} name={person.name} number={person.number} />
+        <Person
+          key={person.id}
+          name={person.name}
+          number={person.number}
+          deleteContact={() => deleteOnClick(person)}
+        />
       ))}
     </div>
   );
@@ -31,27 +39,51 @@ const Filter = (props) => {
 };
 
 const App = () => {
-  const [persons, setPersons] = useState([
-    { name: "Arto Hellas", number: "040-123456" },
-    { name: "Ada Lovelace", number: "39-44-5323523" },
-    { name: "Dan Abramov", number: "12-43-234345" },
-    { name: "Mary Poppendieck", number: "39-23-6423122" },
-  ]);
+  const [persons, setPersons] = useState([]);
   const [newName, setNewName] = useState("");
   const [newNumber, setNewNumber] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [showAll, setShowAll] = useState(true);
 
+  useEffect(() => {
+    personService.getAll().then((response) => {
+      setPersons(response.data);
+    });
+  }, []);
+
   const submitDetails = (event) => {
     event.preventDefault();
     if (persons.some((p) => p.name === newName)) {
-      window.alert(`${newName} is already added to phonebook`);
-      return;
+      if (
+        window.confirm(
+          `${newName} is already added to phonebook, replace old number with a new one?`
+        )
+      ) {
+        const p = persons.find((p) => p.name === newName);
+        const newContact = { ...p, number: newNumber };
+        personService.edit(p.id, newContact);
+        const copy = persons.map((person) =>
+          person.name !== newName ? person : newContact
+        );
+        setPersons(copy);
+      }
+    } else {
+      personService.create({
+        name: newName,
+        number: newNumber,
+      });
+      const copy = [...persons, { name: newName, number: newNumber }];
+      setPersons(copy);
     }
-    const copy = [...persons, { name: newName, number: newNumber }];
-    setPersons(copy);
     setNewName("");
     setNewNumber("");
+  };
+
+  const deleteContact = (person) => {
+    if (window.confirm(`Delete ${person.name} ?`)) {
+      personService.deletePerson(person.id);
+      setPersons(persons.filter((p) => p.id !== person.id));
+    }
   };
 
   const handleNameChange = (event) => {
@@ -93,7 +125,7 @@ const App = () => {
       </form>
       <h3>Contacts</h3>
       <Filter value={searchInput} onChange={handleSearchChange} />
-      <Persons persons={personsToShow} />
+      <Persons persons={personsToShow} deleteOnClick={deleteContact} />
     </div>
   );
 };
