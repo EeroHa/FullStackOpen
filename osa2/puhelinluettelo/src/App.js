@@ -1,5 +1,22 @@
 import { useState, useEffect } from "react";
 import personService from "./services/persons";
+import "./index.css";
+
+const ErrorNotification = ({ message }) => {
+  if (message === null) {
+    return null;
+  }
+
+  return <div className="error">{message}</div>;
+};
+
+const SuccessNotification = ({ message }) => {
+  if (message === null) {
+    return null;
+  }
+
+  return <div className="success">{message}</div>;
+};
 
 const Person = (props) => {
   return (
@@ -44,12 +61,28 @@ const App = () => {
   const [newNumber, setNewNumber] = useState("");
   const [searchInput, setSearchInput] = useState("");
   const [showAll, setShowAll] = useState(true);
+  const [successMessage, setSuccessMessage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(null);
 
   useEffect(() => {
     personService.getAll().then((response) => {
       setPersons(response.data);
     });
   }, []);
+
+  const successNotification = (msg) => {
+    setSuccessMessage(msg);
+    setTimeout(() => {
+      setSuccessMessage(null);
+    }, 5000);
+  };
+
+  const errorNotification = (msg) => {
+    setErrorMessage(msg);
+    setTimeout(() => {
+      setErrorMessage(null);
+    }, 5000);
+  };
 
   const submitDetails = (event) => {
     event.preventDefault();
@@ -61,28 +94,54 @@ const App = () => {
       ) {
         const p = persons.find((p) => p.name === newName);
         const newContact = { ...p, number: newNumber };
-        personService.edit(p.id, newContact);
-        const copy = persons.map((person) =>
-          person.name !== newName ? person : newContact
-        );
-        setPersons(copy);
+        personService
+          .edit(p.id, newContact)
+          .then(() => {
+            const copy = persons.map((person) =>
+              person.name !== newName ? person : newContact
+            );
+            setPersons(copy);
+            successNotification(`Changed ${newName} number to ${newNumber}`);
+          })
+          .catch((error) => {
+            errorNotification(
+              `Error: ${error} when editing contact ${newName}`
+            );
+          });
       }
     } else {
-      personService.create({
-        name: newName,
-        number: newNumber,
-      });
-      const copy = [...persons, { name: newName, number: newNumber }];
-      setPersons(copy);
+      personService
+        .create({
+          name: newName,
+          number: newNumber,
+        })
+        .then(() => {
+          const copy = [...persons, { name: newName, number: newNumber }];
+          setPersons(copy);
+          successNotification(`Added ${newName} to contacts`);
+        })
+        .catch((error) => {
+          errorNotification(`Error: ${error} when adding contact ${newName}`);
+        });
     }
+
     setNewName("");
     setNewNumber("");
   };
 
   const deleteContact = (person) => {
     if (window.confirm(`Delete ${person.name} ?`)) {
-      personService.deletePerson(person.id);
-      setPersons(persons.filter((p) => p.id !== person.id));
+      personService
+        .deletePerson(person.id)
+        .then(() => {
+          setPersons(persons.filter((p) => p.id !== person.id));
+          successNotification(`Deleted contact ${person.name}`);
+        })
+        .catch((error) => {
+          errorNotification(
+            `Error: ${error} when deleting contact ${person.name}`
+          );
+        });
     }
   };
 
@@ -109,6 +168,8 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
+      <ErrorNotification message={errorMessage} />
+      <SuccessNotification message={successMessage} />
       <h3>add a new contact</h3>
       <form>
         <div>
