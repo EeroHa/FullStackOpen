@@ -72,6 +72,49 @@ describe('POST /api/blogs', () => {
     expect(response.body.likes).toBeDefined();
     expect(response.body.likes === 0);
   });
+
+  test('Try to add new blog without a title', async () => {
+    const newBlog = {
+      author: 'Testi Kirjoittaja',
+      url: 'www.testi.com',
+    };
+
+    await api.post('/api/blogs').send(newBlog).expect(400);
+  });
+});
+
+describe('DELETE /api/blogs/{id}', () => {
+  test('Delete a blog', async () => {
+    const response = await api.get('/api/blogs');
+    const id = response.body[0].id;
+    await api.delete(`/api/blogs/${id}`).expect(204);
+  });
+});
+
+describe('PUT /api/blogs/{id}', () => {
+  test('Edit a blogs likes', async () => {
+    const response = await api.get('/api/blogs');
+    const oldBlog = response.body[0];
+
+    const request = {
+      likes: 10,
+    };
+
+    const expected = {
+      id: oldBlog.id,
+      author: oldBlog.author,
+      title: oldBlog.title,
+      url: oldBlog.url,
+      likes: request.likes,
+    };
+
+    const r = await api
+      .put(`/api/blogs/${oldBlog.id}`)
+      .send(request)
+      .expect(200);
+
+    expect(r.body).toEqual(expected);
+  });
 });
 
 afterAll(async () => {
