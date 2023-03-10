@@ -3,13 +3,47 @@ const supertest = require('supertest');
 const helper = require('../utils/list_helper');
 const app = require('../app');
 const Blog = require('../models/blog');
+const User = require('../models/user');
 const _ = require('lodash');
 
 const api = supertest(app);
 
+var token;
+const blogsInitLength = 2;
+
 beforeEach(async () => {
+  await User.deleteMany({});
   await Blog.deleteMany({});
-  await Blog.insertMany(helper.initialBlogs);
+
+  const user = {
+    username: 'testuser',
+    password: 'testpassword',
+    name: 'Test User',
+  };
+  const userResponse = await api.post('/api/users').send(user);
+
+  const loginResponse = await api
+    .post('/api/login')
+    .send({ username: 'testuser', password: 'testpassword' });
+  token = loginResponse.body.token;
+
+  const blog1 = new Blog({
+    title: 'Test Blog 1',
+    author: 'Test Author 1',
+    url: 'http://testblog1.com',
+    likes: 1,
+    user: userResponse.body.id,
+  });
+  await blog1.save();
+
+  const blog2 = new Blog({
+    title: 'Test Blog 2',
+    author: 'Test Author 2',
+    url: 'http://testblog2.com',
+    likes: 2,
+    user: userResponse.body.id,
+  });
+  await blog2.save();
 });
 
 describe('GET /api/blogs', () => {
@@ -23,7 +57,7 @@ describe('GET /api/blogs', () => {
   test('there are right amount of blogs', async () => {
     const response = await api.get('/api/blogs');
 
-    expect(response.body).toHaveLength(helper.initialBlogs.length);
+    expect(response.body).toHaveLength(blogsInitLength);
   });
 
   test('blogs have an id', async () => {
@@ -45,12 +79,13 @@ describe('POST /api/blogs', () => {
     await api
       .post('/api/blogs')
       .send(newBlog)
+      .set('Authorization', `Bearer ${token}`)
       .expect(201)
       .expect('Content-Type', /application\/json/);
 
     const response = await api.get('/api/blogs');
 
-    expect(response.body).toHaveLength(helper.initialBlogs.length + 1);
+    expect(response.body).toHaveLength(blogsInitLength + 1);
   });
 
   test('If new blog has no likes field, it is set to 0', async () => {
@@ -62,6 +97,7 @@ describe('POST /api/blogs', () => {
     const r = await api
       .post('/api/blogs')
       .send(newBlog)
+      .set('Authorization', `Bearer ${token}`)
       .expect(201)
       .expect('Content-Type', /application\/json/);
 
@@ -79,7 +115,26 @@ describe('POST /api/blogs', () => {
       url: 'www.testi.com',
     };
 
-    await api.post('/api/blogs').send(newBlog).expect(400);
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(400);
+  });
+
+  test('Try to add a blog without a token', async () => {
+    const newBlog = {
+      author: 'Testi Kirjoittaja',
+      likes: '0',
+      title: 'Testi',
+      url: 'www.testi.com',
+    };
+
+    await api
+      .post('/api/blogs')
+      .send(newBlog)
+      .expect(400)
+      .expect('Content-Type', /application\/json/);
   });
 });
 
@@ -87,7 +142,10 @@ describe('DELETE /api/blogs/{id}', () => {
   test('Delete a blog', async () => {
     const response = await api.get('/api/blogs');
     const id = response.body[0].id;
-    await api.delete(`/api/blogs/${id}`).expect(204);
+    const r = await api
+      .delete(`/api/blogs/${id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(204);
   });
 });
 
@@ -106,6 +164,7 @@ describe('PUT /api/blogs/{id}', () => {
       title: oldBlog.title,
       url: oldBlog.url,
       likes: request.likes,
+      user: oldBlog.user.id,
     };
 
     const r = await api
