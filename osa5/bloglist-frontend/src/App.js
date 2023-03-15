@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import Blog from './components/Blog';
+import Togglable from './components/Togglable';
+import CreateBlogForm from './components/CreateBlog';
 import blogService from './services/blogs';
 import loginService from './services/login';
 
@@ -24,9 +26,6 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [title, setTitle] = useState('');
-  const [author, setAuthor] = useState('');
-  const [url, setUrl] = useState('');
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
 
@@ -81,21 +80,17 @@ const App = () => {
     setUser(null);
   };
 
-  const handleCreateBlog = async (event) => {
-    event.preventDefault();
+  const addBlog = async (blogObject) => {
     console.log('creating a blog');
 
     try {
-      await blogService.create({
-        title,
-        author,
-        url,
-      });
-      successNotification(`a new blog ${title} by ${author}`);
+      await blogService.create(blogObject);
 
-      setAuthor('');
-      setTitle('');
-      setUrl('');
+      const allBlogs = await blogService.getAll();
+      setBlogs(allBlogs);
+      successNotification(
+        `a new blog ${blogObject.title} by ${blogObject.author}`
+      );
     } catch (exception) {
       errorNotification('blog cannot be created, invalid blog');
       console.log(exception);
@@ -105,6 +100,18 @@ const App = () => {
   useEffect(() => {
     blogService.getAll().then((blogs) => setBlogs(blogs));
   }, []);
+
+  const addLike = async (blogObject, id) => {
+    try {
+      await blogService.update(blogObject, id);
+
+      const allBlogs = await blogService.getAll();
+      setBlogs(allBlogs);
+    } catch (exception) {
+      errorNotification('cannot like blog');
+      console.log(exception);
+    }
+  };
 
   if (user === null) {
     return (
@@ -145,41 +152,17 @@ const App = () => {
       <p>
         {user.username} logged in <button onClick={handleLogout}>logout</button>
       </p>
-      <h2>create a new blog</h2>
-      <form onSubmit={handleCreateBlog}>
-        <div>
-          title
-          <input
-            type="text"
-            value={title}
-            name="Title"
-            onChange={({ target }) => setTitle(target.value)}
-          />
-        </div>
-        <div>
-          author
-          <input
-            type="text"
-            value={author}
-            name="Author"
-            onChange={({ target }) => setAuthor(target.value)}
-          />
-        </div>
-        <div>
-          ulr
-          <input
-            type="text"
-            value={url}
-            name="Url"
-            onChange={({ target }) => setUrl(target.value)}
-          />
-        </div>
-        <button type="submit">create</button>
-      </form>
+      <Togglable buttonLabel="create">
+        <CreateBlogForm addBlog={addBlog} />
+      </Togglable>
 
-      {blogs.map((blog) => (
-        <Blog key={blog.id} blog={blog} />
-      ))}
+      {blogs
+        .sort((a, b) => {
+          return b.likes - a.likes;
+        })
+        .map((blog) => (
+          <Blog key={blog.id} blog={blog} addLike={addLike} />
+        ))}
     </div>
   );
 };
