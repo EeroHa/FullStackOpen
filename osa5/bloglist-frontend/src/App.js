@@ -115,6 +115,20 @@ const App = () => {
     }
   };
 
+  const deleteBlog = async (id) => {
+    try {
+      await blogService.deleteBlog(id);
+
+      const allBlogs = await blogService.getAll();
+      setBlogs(allBlogs);
+    } catch (exception) {
+      errorNotification('cannot remove blog');
+      console.log(exception);
+    }
+  };
+
+  console.log(user);
+
   if (user === null) {
     return (
       <div>
@@ -163,7 +177,13 @@ const App = () => {
           return b.likes - a.likes;
         })
         .map((blog) => (
-          <Blog key={blog.id} blog={blog} addLike={addLike} />
+          <Blog
+            key={blog.id}
+            blog={blog}
+            addLike={addLike}
+            deleteBlog={deleteBlog}
+            username={user.username}
+          />
         ))}
     </div>
   );
