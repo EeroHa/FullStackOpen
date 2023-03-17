@@ -127,12 +127,10 @@ const App = () => {
     }
   };
 
-  console.log(user);
-
   if (user === null) {
     return (
       <div>
-        <h2>Log in to application</h2>
+        <h2>Login to application</h2>
         <ErrorNotification message={errorMessage} />
         <SuccessNotification message={successMessage} />
         <form onSubmit={handleLogin}>
@@ -183,6 +181,7 @@ const App = () => {
             addLike={addLike}
             deleteBlog={deleteBlog}
             username={user.username}
+            class="blog"
           />
         ))}
     </div>
