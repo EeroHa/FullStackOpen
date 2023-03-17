@@ -48,6 +48,7 @@ const App = () => {
     if (loggedUserJSON) {
       const user = JSON.parse(loggedUserJSON);
       setUser(user);
+      blogService.setToken(user.token);
     }
   }, []);
 
@@ -76,6 +77,7 @@ const App = () => {
     event.preventDefault();
     console.log('logging out');
 
+    blogService.setToken(null);
     window.localStorage.removeItem('loggedUser');
     setUser(null);
   };
