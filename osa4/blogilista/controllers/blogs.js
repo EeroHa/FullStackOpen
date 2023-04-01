@@ -7,14 +7,11 @@ blogsRouter.get('/', async (request, response) => {
   response.json(blogs);
 });
 
-blogsRouter.get('/:id', (request, response) => {
-  Blog.findById(request.params.id).then((blog) => {
-    if (blog) {
-      response.json(blog);
-    } else {
-      response.status(404).end();
-    }
+blogsRouter.get('/:id', async (request, response) => {
+  const blog = await Blog.findById(request.params.id).populate('user', {
+    username: 1,
   });
+  response.json(blog);
 });
 
 blogsRouter.delete('/:id', userExtractor, async (request, response, next) => {
