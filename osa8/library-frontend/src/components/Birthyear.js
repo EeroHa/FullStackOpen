@@ -13,8 +13,6 @@ const UPDATE_BIRTHYEAR = gql`
 const Birthyear = ({ authors }) => {
   const [name, setName] = useState('');
   const [born, setBorn] = useState('');
-  console.log(authors);
-
   const [updateBirthyear] = useMutation(UPDATE_BIRTHYEAR);
 
   const submit = async (event) => {
@@ -44,6 +42,7 @@ const Birthyear = ({ authors }) => {
         <div>
           born
           <input
+            type="number"
             value={born}
             onChange={({ target }) => setBorn(target.value)}
           />
