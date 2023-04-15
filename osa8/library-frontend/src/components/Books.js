@@ -1,19 +1,38 @@
 import { gql, useQuery } from '@apollo/client';
+import { useState } from 'react';
 
-const ALL_BOOKS = gql`
-  query {
-    allBooks {
-      title
-      author {
-        name
+const ALL_BOOKS = (genre) => {
+  if (genre !== 'all') {
+    return gql`
+    query {
+      allBooks (genre: "${genre}") {
+        title
+        author {
+          name
+        }
+        published
       }
-      published
     }
+  `;
   }
-`;
+  return gql`
+    query {
+      allBooks {
+        title
+        author {
+          name
+        }
+        published
+        genres
+      }
+    }
+  `;
+};
 
 const Books = (props) => {
-  const booksResult = useQuery(ALL_BOOKS, { pollInterval: 10000 });
+  const [genreFilter, setGenreFilter] = useState('all');
+  const booksResult = useQuery(ALL_BOOKS(genreFilter), { pollInterval: 10000 });
+  const allBooks = useQuery(ALL_BOOKS('all'), { pollInterval: 10000 });
 
   if (!props.show) {
     return null;
@@ -24,11 +43,29 @@ const Books = (props) => {
   }
 
   const books = booksResult.data.allBooks;
+  const allBooksData = allBooks.data.allBooks;
+  const allGenres = allBooksData.flatMap((book) => book.genres);
+  const genres = [...new Set(allGenres), 'all'];
 
   return (
     <div>
       <h2>books</h2>
-
+      <p>
+        Filter by genre:{' '}
+        <select
+          value={genreFilter}
+          onChange={({ target }) => {
+            setGenreFilter(target.value);
+            booksResult.refetch();
+          }}
+        >
+          {genres.map((g) => (
+            <option key={g} value={g}>
+              {g}
+            </option>
+          ))}
+        </select>
+      </p>
       <table>
         <tbody>
           <tr>

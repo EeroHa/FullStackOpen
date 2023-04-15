@@ -10,7 +10,7 @@ const UPDATE_BIRTHYEAR = gql`
   }
 `;
 
-const Birthyear = ({ authors }) => {
+const Birthyear = ({ authors, token }) => {
   const [name, setName] = useState('');
   const [born, setBorn] = useState('');
   const [updateBirthyear] = useMutation(UPDATE_BIRTHYEAR);
@@ -24,6 +24,10 @@ const Birthyear = ({ authors }) => {
     setName('');
     setBorn('');
   };
+
+  if (!token) {
+    return;
+  }
 
   return (
     <div>
